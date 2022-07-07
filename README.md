@@ -5,8 +5,10 @@ More specifically, the scripts nudge the ORCHIDEE initial state of the forest to
 
 PYTHON SCRIPTS:
 
-Nudged-spinup.py: Nudge the simulated diameter toward the diameter from the Pucher Inventory. It creates new restart files. 
+Nudged-spinup_1ac.py: Nudge the simulated diameter toward the diameter from the Pucher Inventory. It creates new restart files. 
 
 Nudged-spinup_4ac.py: The script is similar to Nudge-spinup.py except it was adapted to an ORCHIDEE version that simulates 4 diameter classes over forested areas. Nudge the fraction of diameter classes toward the one from the Pucher Inventory. The fraction of vegetation is taken from the ORCHIDEE simulation.
+
+Map-spinup.py: Draw maps that compare the nudged state of the forest against the randomized state of the forest at the end of the spinup simulation.
 
 Requirement: All scripts require at least 100 years of an ORCHIDEE simulation with a balanced carbon content (NBP close to 0). These years are obtained after a forest clearcut.
