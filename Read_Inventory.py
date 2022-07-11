@@ -5,6 +5,9 @@ Reads the forest data from the Pucher inventory
 Finds the latitudes and longitudes coordinates (wgs 84 system) from the original coordinate espg
 Converts the data from the tif format to a pandas dataframe, than creates a netcdf
 
+Input: Pucher Inventory (repertory ForestInventory) 
+Output: File DIAMETER.nc containing the observed diameters, fraction of age classes, fraction of species and the location of the observations
+
 """
 
 from osgeo import gdal,osr,ogr
