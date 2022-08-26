@@ -1,4 +1,4 @@
-# ORCHIDEE-Spinup
+# Forest-Initialization
 The repository contain Python scripts aiming to initialize the forested variables (e.g. Diameter, height) in the ORCHIDEE Land Surface Model.
 
 More specifically, the scripts nudge the ORCHIDEE initial state of the forest toward observations from Pucher Inventory (https://www.mdpi.com/2072-4292/14/2/395). 
