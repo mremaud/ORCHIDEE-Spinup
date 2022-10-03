@@ -132,29 +132,33 @@ for rr in name_restart.keys():
   id_pft=id_yr[2]
   if len(id_yr)==0: continue
   for var in restart.keys():
+   #Open the restart file for the spinup year yy 
    f = Dataset(file_restart)
    ncf=f.variables[var][:]
    f.close()
    dim_var=np.shape(ncf)
-   if (len(dim_var)==1)|(len(ncf)==1): continue
+   if (dim_var==(1,1))|(len(dim_var)==1): continue
    loc_lat=np.where(np.asarray(dim_var)==nlon)[0][0]
-   loc_pft=np.where(np.asarray(dim_var)==npft)[0]
-   print(loc_pft,len(dim_var),var)
-   if loc_pft == 0: continue
-#   print(dim_var,var,yy)   
-   if (loc_pft==1)&(len(dim_var)==4):
-    restart[var].values[:,id_pft,id_lat,id_lon]=ncf[:,id_pft,id_lat,id_lon]
-    print("selection")
-   elif (loc_pft==2)&(len(dim_var)==5):
-    restart[var].values[:,:,id_pft,id_lat,id_lon]=ncf[:,:,id_pft,id_lat,id_lon]
-   elif (loc_pft==3)&(len(dim_var)==6):
-    restart[var].values[:,:,:,id_pft,id_lat,id_lon]=ncf[:,:,:,id_pft,id_lat,id_lon]
- os.system("rm -f "+homedir+"/"+name_restart[rr]+"_4ac_f.nc")
- os.system("rm -f "+homedir+"/"+name_restart[rr]+"_4ac_i.nc")
- 
- restart.to_netcdf(homedir+"/"+name_restart[rr]+"_4ac_f.nc") 
- os.system("cp -r "+file_restart+ " "+homedir+"/"+name_restart[rr]+"_4ac_i.nc") 
- 
+   loc_pft=np.where(np.asarray(dim_var)==npft)[0][0] if len(np.where(np.asarray(dim_var)==npft)[0]!=0) else 0
+   if (loc_pft == 0)&(loc_lat==1)&(len(dim_var)==3):
+    restart[var].values[:,id_lat,id_lon]=np.copy(ncf[:,id_lat,id_lon])
+   elif (loc_pft == 0)&(loc_lat==2)&(len(dim_var)==4):
+    restart[var].values[:,:,id_lat,id_lon]=np.copy(ncf[:,:,id_lat,id_lon])
+   if (loc_pft==1)&(len(dim_var)==4)&(loc_lat==2):
+    restart[var].values[:,id_pft,id_lat,id_lon]=np.copy(ncf[:,id_pft,id_lat,id_lon])
+   elif (loc_pft==2)&(len(dim_var)==5)&(loc_lat==3):
+    restart[var].values[:,:,id_pft,id_lat,id_lon]=np.copy(ncf[:,:,id_pft,id_lat,id_lon])
+   elif (loc_pft==3)&(len(dim_var)==6)&(loc_lat==4):
+    restart[var].values[:,:,:,id_pft,id_lat,id_lon]=np.copy(ncf[:,:,:,id_pft,id_lat,id_lon])
+   elif (loc_pft==2)&(len(dim_var)==6)&(loc_lat==4):
+    restart[var].values[:,:,id_pft,:,id_lat,id_lon]=np.copy(ncf[:,:,id_pft,:,id_lat,id_lon])
+   elif (loc_pft==1)&(len(dim_var)==5)&(loc_lat==3):
+    restart[var].values[:,id_pft,:,id_lat,id_lon]=np.copy(ncf[:,id_pft,:,id_lat,id_lon])
+
+ os.system("rm -f "+homedir+"/"+name_restart[rr]+"_1ac_f.nc")
+ os.system("rm -f "+homedir+"/"+name_restart[rr]+"_1ac_i.nc")
+ restart.to_netcdf(homedir+"/"+name_restart[rr]+"_1ac_f.nc")
+ os.system("cp -r "+file_restart+ " "+homedir+"/"+name_restart[rr]+"_1ac_i.nc")
 
 #CREATION OF THE OUTPUT FILE------------------------------------------------------------------------------------------
 print('Creation of the output files')

@@ -37,10 +37,10 @@ homedir="/ccc/work/cont003/gen6328/p24remau/PYTHON/SPINUP/" #Homedir
 begy=2162                                                   #first year of the ORCHIDEE spinup simulation after the clearcut
 endy=2314                                                   #last year of the ORCHIDEE spinup simulation
 nb_PFT=15                                                   # Number of PFT as defined in the spin-up ORCHIDEE configuration
-exp="spinup3_n" #'''spinup_3006'                            # Name 1 of the simulation  
+exp="spinup9" #'''spinup_3006'                            # Name 1 of the simulation  
 exp2="anspin"                                               # Name 2 of the simulation (name of the ORCHIDEE job)
 dirout="/ccc/scratch/cont003/gen2201/p24remau/IGCM_OUT/OL2/TEST/"+exp+"/"+exp2+"/SBG/Output/YE/"   #Path toward the ORCHIDEE output
-list_var=["DIAMETER"]                                       #Name of the observed variable 
+list_var=["DIAMETER_DOM"]                                       #Name of the observed variable 
 list_pft=[4,5,6,7,8,9]                                      #PFTs covered by forest
 
 #READ OBSERVATIONS---------------------------------------------------------------------------------------------------------
@@ -121,8 +121,8 @@ for iv,var in enumerate(list_var):
       Jmax[ilat,ilon,ipft-1,yy-begy]=0
      #Square of the difference between the observed and simulated value
      J[ilat,ilon,ipft-1,yy-begy]=(ncf_ij-Obs1_tmp["obs"].mean())**2
-     Jmin[ilat,ilon,ipft-1,yy-begy]=(ncf_ij-Obs1_tmp["obs"].mean()-Obs1_tmp["error"].std())**2
-     Jmax[ilat,ilon,ipft-1,yy-begy]=(ncf_ij-Obs1_tmp["obs"].mean()+Obs1_tmp["error"].std())**2
+     Jmin[ilat,ilon,ipft-1,yy-begy]=(ncf_ij-Obs1_tmp["obs"].mean()-Obs1_tmp["error"].mean())**2
+     Jmax[ilat,ilon,ipft-1,yy-begy]=(ncf_ij-Obs1_tmp["obs"].mean()+Obs1_tmp["error"].mean())**2
 
 #Selection of the simulated year in ORCHIDEE for each pixel and PFT---------------------------------------------------
 #The year minimizes the diffence between the simulated and observed value of the chosen parameter (e.g. diameter)
@@ -153,6 +153,7 @@ for rr in name_restart.keys(): #loop over sechiba, stomate
  #Load a restart file as a template
  file_restart_0=dirout+"/../../../"+rr+"/Restart/"+exp2+"_"+str(begy)+"1231_"+name_restart[rr]+"_rest.nc"
  restart=xr.open_dataset(file_restart_0,decode_times=False,decode_cf=False)
+ restart.to_netcdf(homedir+"/"+name_restart[rr]+"_1ac_f.nc0")
  for yy in range(begy,endy+1): #Loop over the spinup years
   file_restart=dirout+"/../../../"+rr+"/Restart/"+exp2+"_"+str(yy)+"1231_"+name_restart[rr]+"_rest.nc"
   id_yr=np.where(J_year==yy) 
@@ -166,16 +167,24 @@ for rr in name_restart.keys(): #loop over sechiba, stomate
    ncf=f.variables[var][:]
    f.close()
    dim_var=np.shape(ncf)
-   if (len(dim_var)==1)|(len(ncf)==1): continue
-   loc_lat=np.where(np.asarray(dim_var)==nlon)[0][0] # Search for the latitude axis 
-   loc_pft=np.where(np.asarray(dim_var)==npft)[0]    # Search for the vegetation axis 
-   if loc_pft == 0: continue
-   if (loc_pft==1)&(len(dim_var)==4):
+   if (dim_var==(1,1))|(len(dim_var)==1): continue
+   loc_lat=np.where(np.asarray(dim_var)==nlon)[0][0]
+   loc_pft=np.where(np.asarray(dim_var)==npft)[0][0] if len(np.where(np.asarray(dim_var)==npft)[0]!=0) else 0
+   if (loc_pft == 0)&(loc_lat==1)&(len(dim_var)==3): 
+    restart[var].values[:,id_lat,id_lon]=np.copy(ncf[:,id_lat,id_lon])
+   elif (loc_pft == 0)&(loc_lat==2)&(len(dim_var)==4):
+    restart[var].values[:,:,id_lat,id_lon]=np.copy(ncf[:,:,id_lat,id_lon])
+   if (loc_pft==1)&(len(dim_var)==4)&(loc_lat==2):
     restart[var].values[:,id_pft,id_lat,id_lon]=np.copy(ncf[:,id_pft,id_lat,id_lon])
-   elif (loc_pft==2)&(len(dim_var)==5):
+   elif (loc_pft==2)&(len(dim_var)==5)&(loc_lat==3):
     restart[var].values[:,:,id_pft,id_lat,id_lon]=np.copy(ncf[:,:,id_pft,id_lat,id_lon])
-   elif (loc_pft==3)&(len(dim_var)==6):
+   elif (loc_pft==3)&(len(dim_var)==6)&(loc_lat==4):
     restart[var].values[:,:,:,id_pft,id_lat,id_lon]=np.copy(ncf[:,:,:,id_pft,id_lat,id_lon])
+   elif (loc_pft==2)&(len(dim_var)==6)&(loc_lat==4):
+    restart[var].values[:,:,id_pft,:,id_lat,id_lon]=np.copy(ncf[:,:,id_pft,:,id_lat,id_lon])
+   elif (loc_pft==1)&(len(dim_var)==5)&(loc_lat==3):
+    restart[var].values[:,id_pft,:,id_lat,id_lon]=np.copy(ncf[:,id_pft,:,id_lat,id_lon])
+
  os.system("rm -f "+homedir+"/"+name_restart[rr]+"_1ac_f.nc")
  os.system("rm -f "+homedir+"/"+name_restart[rr]+"_1ac_i.nc")
  
@@ -187,7 +196,7 @@ print('Creation of the output files')
 #Load an output file as a template#####
 file_output_0=dirout+exp2+"_"+period+"_1Y_stomate_history.nc"
 restart=xr.open_dataset(file_output_0,decode_times=False,decode_cf=False)
-list_vars=["HEIGHT","DIAMETER"]
+list_vars=["HEIGHT","DIAMETER_DOM"]
 for yy in range(begy,endy+1):
   period=str(yy)+"0101_"+str(yy)+"1231"
   file_output=dirout+exp2+"_"+period+"_1Y_stomate_history.nc"
