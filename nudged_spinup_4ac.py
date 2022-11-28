@@ -38,12 +38,12 @@ list_PFT=[2,3,4,5,6,7,8,9]                                      #List of the for
 homedir="/ccc/work/cont003/gen6328/p24remau/PYTHON/SPINUP/"     #Home directory
 begy=2162                                                       #Beginning of the simulation
 endy=2314                                                       #End of the simulation
-exp='spinup_4ac'                                                #Name of the simulation
-exp2="preanspin"                                                #NAme of the job (simulation)
+exp='spinup_4c-2'                                                #Name of the simulation
+exp2="anspin"                                                #NAme of the job (simulation)
 #Directory of the ORCHIDEE output 
-dirout="/ccc/scratch/cont003/gen2201/p24remau/IGCM_OUT/OL2/TEST/"+exp+"/"+exp2+"/SBG/Output/YE/"
+dirout="/ccc/scratch/cont003/gen6328/p24remau/IGCM_OUT/OL2/TEST/"+exp+"/"+exp2+"/SBG/Output/YE/"
 nb_ac=4                                                         # Number of diameter classes in ORCHIDEE
-list_var=["DIAMETER"]                                        #Name of the variable to nudge
+list_var=["DIAMETER_DOM"]                                        #Name of the variable to nudge
 #-------------------------------------------------------------------------------------------------------
 
 #Get the ORCHIDEE coordinates
@@ -63,16 +63,15 @@ Obs1=Obs.groupby(["clon","clat"]).mean().reset_index()                     #Aver
 
 #---COMPUTATION OF THE FRACTION OF DIAMETER CLASSES PER ORCHIDEE GRID CELL------------------------------- 
 #Declaration of columns C1,..,C4 :fraction of age class as defined in the ORCHIDEE LSM
-Obs1["C1"]=0; Obs1["C2"]=0; Obs1["C3"]=0; Obs1["C4"]=0
-
-#Computation of fraction of age classes
-for irr,row in Obs1.iterrows():
- mask=(Obs.clon==int(row.clon))&(Obs.clat==int(row.clat))&(Obs.Parameter=="DIAMETER").copy(deep=True)
- Obs1.loc[irr,"C1"]=float(len(Obs[mask&(Obs.obs<7)]))               /float(len(Obs[mask]))
- Obs1.loc[irr,"C2"]=float(len(Obs[mask&(Obs.obs>=7)&(Obs.obs<20)])) /float(len(Obs[mask]))
- Obs1.loc[irr,"C3"]=float(len(Obs[mask&(Obs.obs>=20)&(Obs.obs<40)]))/float(len(Obs[mask]))
- Obs1.loc[irr,"C4"]=float(len(Obs[mask&(Obs.obs>=40)]))             /float(len(Obs[mask]))
-Obs1.dropna(inplace=True)
+#Obs1["C1"]=0; Obs1["C2"]=0; Obs1["C3"]=0; Obs1["C4"]=0
+#for irr,row in Obs1.iterrows():
+# mask=(Obs.clon==int(row.clon))&(Obs.clat==int(row.clat))&(Obs.Parameter=="DIAMETER").copy(deep=True)
+# if len(Obs[mask])==0: continue
+# Obs1.loc[irr,"C1"]=float(len(Obs[mask&(Obs.obs<7)]))               /float(len(Obs[mask]))
+# Obs1.loc[irr,"C2"]=float(len(Obs[mask&(Obs.obs>=7)&(Obs.obs<20)])) /float(len(Obs[mask]))
+# Obs1.loc[irr,"C3"]=float(len(Obs[mask&(Obs.obs>=20)&(Obs.obs<40)]))/float(len(Obs[mask]))
+# Obs1.loc[irr,"C4"]=float(len(Obs[mask&(Obs.obs>=40)]))             /float(len(Obs[mask]))
+#Obs1.dropna(inplace=True)
 
 #---Computation of the square of the difference between the observed and simulated values----------------
 J=np.zeros((nlat,nlon,npft,(endy-begy+1)))                       #J(j,i,k,year)=(diameter_obs-diameter_sim(year))^2
@@ -83,26 +82,32 @@ for iv,var in enumerate(list_var):
   period=str(yy)+"0101_"+str(yy)+"1231"                          #Opening of the ORCHIDEE yearly output for the year yy
   namef=exp2+"_"+period+"_1Y_stomate_history.nc"
   f = Dataset(dirout+"/"+namef)
-  ncf=f.variables["VEGET_MAX"][-1,:,:,:]                         #The fraction of PFT is fixed and taken from the ORCHIDEE configuration (ESA maps are prescribed)
+#  ncf     =f.variables["VEGET_MAX"][-1,:,:,:]                    #The fraction of PFT is fixed and taken from the ORCHIDEE configuration (ESA maps are prescribed)
+  ncf_diam=f.variables[var][-1,:,:,:]*10**2                            #Diameter (4 ac)
   f.close()
   #Loop over ORCHIDEE grid cells, PFTs and diameter classes
   for ilat in range(nlat):
    for ilon in range(nlon):
-    for ipft in list_PFT:                                         
+    Obs1_tmp=Obs1[(Obs1.clon==ilon)&(Obs1.clat==ilat)].copy(deep=True)
+    if Obs1_tmp.empty: continue
+    for ipft in list_PFT:     
+     i_beg=1+(ipft-2)*4
+     i_end=1+(ipft-2)*4+nb_ac                                    
+#     veget_frac=np.sum(ncf[i_beg:i_end,ilat,ilon].data)         #Fraction of the PFT within  the grid cell (ilat,ilon)
+     error=np.zeros(nb_ac)
+     diam=np.zeros(nb_ac)
      for ac in range(1,nb_ac+1):               
       num_PFT=1+(ipft-2)*4+ac
-      Obs1_tmp=Obs1[(Obs1.clon==ilon)&(Obs1.clat==ilat)].copy(deep=True)
-      if Obs1_tmp.empty: continue
       #Extract the grid cell closest to the observation location 
-      ncf_ij=np.squeeze(ncf.data[num_PFT,ilat,ilon])
-      i_beg=1+(ipft-2)*4
-      i_end=1+(ipft-2)*4+nb_ac+1
-      veget_frac=np.sum(ncf[i_beg:i_end,ilat,ilon].data)         #Fraction of the PFT within  the grid cell (ilat,ilon)
+      ncf_ij=np.copy(np.squeeze(ncf_diam.data[num_PFT-1,ilat,ilon]))
       #Square of the difference between the observed and simulated values
-      error=np.abs(ncf_ij-Obs1_tmp["C"+str(ac)].iloc[0]*veget_frac)
+      #error=np.abs(ncf_ij-Obs1_tmp["C"+str(ac)].iloc[0]*veget_frac)
+     # error[ac]=np.copy(np.abs(ncf_ij-Obs1_tmp.obs.iloc[0]))
+      diam[ac-1]=np.copy(ncf_ij)
       if np.isnan(J[ilat,ilon,num_PFT-1,yy-begy]): 
        J[ilat,ilon,num_PFT-1,yy-begy]=0
-      J[ilat,ilon,num_PFT-1,yy-begy] =error
+     if len(diam[diam!=0])!=0:  diam[diam==0]=np.max(diam)
+     J[ilat,ilon,num_PFT-1,yy-begy]=np.min(np.abs(diam-Obs1_tmp.obs.iloc[0]))
 
 #Select the year for each pixel and each PFT
 id_nan=np.where(~np.isnan(J))
@@ -112,10 +117,13 @@ for ilat in id_lat:
   for ipft in id_pft:
    if len(J[ilat,ilon,ipft,~np.isnan(J[ilat,ilon,ipft,:])] )==0: continue
    J_year[ilat,ilon,ipft]=begy+np.nanargmin(J[ilat,ilon,ipft,:], axis=-1)
+   if np.all(J[ilat,ilon,ipft,:]==J[ilat,ilon,ipft,0]):
+    J_year[ilat,ilon,ipft]=endy
 
 ###Year to choose when nan
 year_fill_J=Counter( J_year[J_year!=0].flatten()).most_common(1)[0][0]
 J_year[J_year==0]=year_fill_J
+np.save(dirout+"/"+"J_year",J_year)
 
 #CREATION OF THE RESTART FILE------------------------------------------------------------------------------------------
 name_restart={"SRF":"sechiba","SBG":"stomate"}
@@ -138,7 +146,7 @@ for rr in name_restart.keys():
    f.close()
    dim_var=np.shape(ncf)
    if (dim_var==(1,1))|(len(dim_var)==1): continue
-   loc_lat=np.where(np.asarray(dim_var)==nlon)[0][0]
+   loc_lat=np.where(np.asarray(dim_var)==nlat)[0][0]
    loc_pft=np.where(np.asarray(dim_var)==npft)[0][0] if len(np.where(np.asarray(dim_var)==npft)[0]!=0) else 0
    if (loc_pft == 0)&(loc_lat==1)&(len(dim_var)==3):
     restart[var].values[:,id_lat,id_lon]=np.copy(ncf[:,id_lat,id_lon])
@@ -155,17 +163,17 @@ for rr in name_restart.keys():
    elif (loc_pft==1)&(len(dim_var)==5)&(loc_lat==3):
     restart[var].values[:,id_pft,:,id_lat,id_lon]=np.copy(ncf[:,id_pft,:,id_lat,id_lon])
 
- os.system("rm -f "+homedir+"/"+name_restart[rr]+"_1ac_f.nc")
- os.system("rm -f "+homedir+"/"+name_restart[rr]+"_1ac_i.nc")
- restart.to_netcdf(homedir+"/"+name_restart[rr]+"_1ac_f.nc")
- os.system("cp -r "+file_restart+ " "+homedir+"/"+name_restart[rr]+"_1ac_i.nc")
+ os.system("rm -f "+homedir+"/"+name_restart[rr]+"_4ac_f.nc")
+ os.system("rm -f "+homedir+"/"+name_restart[rr]+"_4ac_i.nc")
+ restart.to_netcdf(homedir+"/"+name_restart[rr]+"_4ac_f.nc")
+ os.system("cp -r "+file_restart+ " "+homedir+"/"+name_restart[rr]+"_4ac_i.nc")
 
 #CREATION OF THE OUTPUT FILE------------------------------------------------------------------------------------------
 print('Creation of the output files')
 #Load an ORCHIDEE outputt file as a template
 file_output_0=dirout+exp2+"_"+period+"_1Y_stomate_history.nc"
 restart=xr.open_dataset(file_output_0,decode_times=False,decode_cf=False)
-list_vars=["HEIGHT","DIAMETER","VEGET_MAX"]
+list_vars=["HEIGHT","DIAMETER","VEGET_MAX","AGE","AGE_STAN"]
 for yy in range(begy,endy+1):
   period=str(yy)+"0101_"+str(yy)+"1231"
   file_output=dirout+exp2+"_"+period+"_1Y_stomate_history.nc"
@@ -180,7 +188,7 @@ for yy in range(begy,endy+1):
    f.close()
    dim_var=np.shape(ncf)
    if (len(dim_var)==1)|(ncf.count()==1): continue
-   loc_lat=np.where(np.asarray(dim_var)==nlon)[0][0]
+   loc_lat=np.where(np.asarray(dim_var)==nlat)[0][0]
    loc_pft=np.where(np.asarray(dim_var)==npft)[0][0]
    if loc_pft == 0: continue
    if (loc_pft==1)&(len(dim_var)==4):

@@ -37,9 +37,11 @@ homedir="/ccc/work/cont003/gen6328/p24remau/PYTHON/SPINUP/" #Homedir
 begy=2162                                                   #first year of the ORCHIDEE spinup simulation after the clearcut
 endy=2314                                                   #last year of the ORCHIDEE spinup simulation
 nb_PFT=15                                                   # Number of PFT as defined in the spin-up ORCHIDEE configuration
-exp="spinup9" #'''spinup_3006'                            # Name 1 of the simulation  
+exp="spinup2_1" #'''spinup_3006'                            # Name 1 of the simulation  
 exp2="anspin"                                               # Name 2 of the simulation (name of the ORCHIDEE job)
-dirout="/ccc/scratch/cont003/gen2201/p24remau/IGCM_OUT/OL2/TEST/"+exp+"/"+exp2+"/SBG/Output/YE/"   #Path toward the ORCHIDEE output
+#dirout="/ccc/scratch/cont003/gen2201/p24remau/IGCM_OUT/OL2/TEST/"+exp+"/"+exp2+"/SBG/Output/YE/"   #Path toward the ORCHIDEE output
+dirout="/ccc/scratch/cont003/gen6328/p24remau/IGCM_OUT/OL2/TEST/"+exp+"/"+exp2+"/SBG/Output/YE/"   #Path toward the ORCHIDEE output
+
 list_var=["DIAMETER_DOM"]                                       #Name of the observed variable 
 list_pft=[4,5,6,7,8,9]                                      #PFTs covered by forest
 
@@ -168,7 +170,8 @@ for rr in name_restart.keys(): #loop over sechiba, stomate
    f.close()
    dim_var=np.shape(ncf)
    if (dim_var==(1,1))|(len(dim_var)==1): continue
-   loc_lat=np.where(np.asarray(dim_var)==nlon)[0][0]
+   print(var,dim_var)
+   loc_lat=np.where(np.asarray(dim_var)==nlat)[0][0]
    loc_pft=np.where(np.asarray(dim_var)==npft)[0][0] if len(np.where(np.asarray(dim_var)==npft)[0]!=0) else 0
    if (loc_pft == 0)&(loc_lat==1)&(len(dim_var)==3): 
     restart[var].values[:,id_lat,id_lon]=np.copy(ncf[:,id_lat,id_lon])
@@ -179,6 +182,7 @@ for rr in name_restart.keys(): #loop over sechiba, stomate
    elif (loc_pft==2)&(len(dim_var)==5)&(loc_lat==3):
     restart[var].values[:,:,id_pft,id_lat,id_lon]=np.copy(ncf[:,:,id_pft,id_lat,id_lon])
    elif (loc_pft==3)&(len(dim_var)==6)&(loc_lat==4):
+    print(var,dim_var)
     restart[var].values[:,:,:,id_pft,id_lat,id_lon]=np.copy(ncf[:,:,:,id_pft,id_lat,id_lon])
    elif (loc_pft==2)&(len(dim_var)==6)&(loc_lat==4):
     restart[var].values[:,:,id_pft,:,id_lat,id_lon]=np.copy(ncf[:,:,id_pft,:,id_lat,id_lon])
@@ -196,7 +200,7 @@ print('Creation of the output files')
 #Load an output file as a template#####
 file_output_0=dirout+exp2+"_"+period+"_1Y_stomate_history.nc"
 restart=xr.open_dataset(file_output_0,decode_times=False,decode_cf=False)
-list_vars=["HEIGHT","DIAMETER_DOM"]
+list_vars=["HEIGHT","DIAMETER_DOM","AGE","AGE_STAND"]
 for yy in range(begy,endy+1):
   period=str(yy)+"0101_"+str(yy)+"1231"
   file_output=dirout+exp2+"_"+period+"_1Y_stomate_history.nc"
@@ -211,7 +215,7 @@ for yy in range(begy,endy+1):
    f.close()
    dim_var=np.shape(ncf)
    if (len(dim_var)==1)|(ncf.count()==1): continue
-   loc_lat=np.where(np.asarray(dim_var)==nlon)[0][0]
+   loc_lat=np.where(np.asarray(dim_var)==nlat)[0][0]
    loc_pft=np.where(np.asarray(dim_var)==npft)[0][0]
    if loc_pft == 0: continue
    if (loc_pft==1)&(len(dim_var)==4):
