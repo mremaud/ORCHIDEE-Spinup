@@ -1,16 +1,16 @@
 """
 
 Author: Marine Remaud
-Date  : March 2022
-The script produces output and restart files simulating that have realistic tree diameters over European forests based on the Pucher inventory. It minimizes the difference between the observed and simulated diameters. The script executes the steps below:
-  1) Performing a nearest neighbour interpolation of the observions from the Pucher Inventory. The interpolation is from the original 8x8 km grid to the ORCHIDEE grid. 
+Date  : Mai 2023
+The script produces output and restart files simulating that have realistic tree heights over northern american forests. It minimizes the difference between the observed and simulated diameters. The script executes the steps below:
+  1) Performing a nearest neighbour interpolation of the observions. The interpolation is from the original grid to the ORCHIDEE grid. 
   2) Loop over the simulated years, latitudes, longitures and PFTs as defined in the ORCHIDEE LSM. For each year, grid point and PFT, the script computes the squared difference between the simulated and observed variable. The numbers are saved in a matrix J(number of years, npft,nlat,nlon)
   3) Selection of the ORCHIDEE year with a mean simulated diameter that is the closest to the observed diameter over the grid cell. The selected years are saved in a matrix J_year(npft,nlat,nlon).
-  4) Loop over the latitudes, longitures and PFTs as defined in the ORCHIDEE LSM. For each ORCHIDEE grid cell and PFT, the script picks up all variables of the selected year to create a new restart file nudged toward the observations from the Pucher inventory.  
+  4) Loop over the latitudes, longitures and PFTs as defined in the ORCHIDEE LSM. For each ORCHIDEE grid cell and PFT, the script picks up all variables of the selected year to create a new restart file nudged toward the observed heights.  
 
 Inputs:  
  * ORCHIDEE simulations with a balanced carbon budget (very weak NBP) after a forest clear-cut
- * A file DIAMETER.nc: Observed diameter at each observed location (Pucher inventory)
+ * A file HEIGHT_DOM.nc: Observed height at each observed location 
 
 Outputs: 
  * sechiba_4ac_f.nc: nudged restart file for sechiba with several  diameter classes
@@ -32,7 +32,7 @@ import copy
 import calendar
 from collections import Counter
 
-#---PARAMETERS------------------------------------------------------------------------------------------
+#---PARAMETERS (TO CHANGE)------------------------------------------------------------------------------------------
 list_PFT=[2,3,4,5,6,7,8,9]                                              #List of the PFTs covered by forests
 homedir="/home/users/mremaud/PYTHON/SPINUP/PYTHON/"                     #Home directory
 dirobs="/home/users/mremaud/PYTHON/SPINUP/PYTHON/"
@@ -43,7 +43,7 @@ exp2="anspin"
 exp2="FG2"                                            #Name of the job (simulation)
 dirout="/home/scratch01/mremaud/IGCM_OUT/OL2/TEST/"+exp+"/"+exp2+"/SBG/Output/MO/"   #Directory of the ORCHIDEE output
 def_file="/home/users/mremaud/ORCHIDEE/modipsl/config/ORCHIDEE_OL/TEST1D_DO/PARAM/orchidee_pft.def_15pft.1ac"   #Def file
-list_var=["DIA_DOM"]                                        #Name of the variable to nudge
+list_var=["HEIGHT_DOM"]                                        #Name of the variable to nudge
 
 #-------------------------------------------------------------------------------------------------------
 #Read the def_file that contains the number  of age class, pft
@@ -82,14 +82,12 @@ lon_orc=nf.lon.values
 lat_orc=nf.lat.values
 nlat=nf.dims['lat']; nlon=nf.dims['lon']; npft=nf.dims['veget']
 
-#---NEAREST NEIGHBOUR INTERPOLATION FROM THE 8x8 km RESOLUTION TO THE ORCHIDEE RESOLUTION----------------
+#---NEAREST NEIGHBOUR INTERPOLATION FROM THE RESOLUTION OF THE OBSERVATIONS TO THE ORCHIDEE RESOLUTION----------------
 Obs=xr.open_dataset(dirobs+list_var[0]+".nc").to_dataframe()                          #Read observed diameter
-Obs.rename(columns={"Diameter":"obs","Diameter_sd":"error"},inplace=True)
 Obs["Parameter"]=list_var[0]
 Obs["clon"]=Obs.apply(lambda row: np.abs(lon_orc-row.lon).argmin(),axis=1) #Find the nearest longitude for each observation
 Obs["clat"]=Obs.apply(lambda row: np.abs(lat_orc-row.lat).argmin(),axis=1) #Find the nearest latiude (in ORCHIDEE) for each observation
 Obs1=Obs.groupby(["clon","clat"]).mean(numeric_only=True).reset_index()                     #Average diameters over ORCHIDEE grid cell (used as a template)
-
 
 
 #---Computation of the square of the difference between the observed and simulated values----------------
@@ -109,6 +107,8 @@ for iv,var in enumerate(list_var):
     Obs1_tmp=Obs1[(Obs1.clon==ilon)&(Obs1.clat==ilat)].copy(deep=True)
     if Obs1_tmp.empty: continue
     for ipft in list_PFT:                             
+     Obs1_tmp=Obs1[(Obs1.clon==ilon)&(Obs1.clat==ilat)&(Obs1.pft==ipft)].copy(deep=True)
+     if Obs1_tmp.empty: continue
      ind_mc=np.where(Table_PFT==ipft)[0]
      ind_ac=Table_AGE[ind_mc]
      error = np.zeros(nb_ac)
@@ -239,7 +239,7 @@ list_dim=np.unique(np.array(list_dim, dtype=object))
 list_dim=[xx for xx in list_dim if ("veget" in xx)|("lon" in xx)|("lat" in xx)]
 #print(list_dim)
 
-list_vars=["HEIGHT","DIA_DOM","VEGET_MAX","AGE","AGE_STAND"]
+list_vars=["HEIGHT_DOM","DIA_DOM","VEGET_MAX","AGE","AGE_STAND"]
 for yy in range(begy,endy+1):
   period=str(yy)+"0101_"+str(yy)+"1231"
   file_output=dirout+exp2+"_"+period+"_1M_stomate_history.nc"
