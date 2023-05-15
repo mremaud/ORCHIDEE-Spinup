@@ -99,7 +99,7 @@ for iv,var in enumerate(list_var):
   period=str(yy)+"0101_"+str(yy)+"1231"                          #Opening of the ORCHIDEE yearly output for the year yy
   namef=exp2+"_"+period+"_1M_stomate_history.nc"
   f = Dataset(dirout+"/"+namef)
-  ncf_diam=f.variables[var][-1,:,:,:]*10**2                            #Diameter (4 ac)
+  ncf_diam=f.variables[var][-1,:,:,:]                            #Diameter (4 ac)
   f.close()
   #Loop over ORCHIDEE grid cells, PFTs and diameter classes
   for ilat in range(nlat):
