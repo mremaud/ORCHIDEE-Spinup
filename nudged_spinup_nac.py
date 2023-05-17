@@ -193,25 +193,25 @@ for rr in name_restart.keys():
      dimensions[ix]="z_a"
    dim_var=np.shape(ncf)
    if (dim_var==(1,1))|(len(dim_var)==1): continue
-   if   dimensions == ('y','x'):
+   if   dimensions == ['y','x']:
     restart[var].values[id_lat,id_lon]=np.copy(ncf[id_lat,id_lon])
-   elif dimensions == ('ZZ','y','x'):
+   elif dimensions == ['ZZ','y','x']:
     restart[var].values[:,id_lat,id_lon]=np.copy(ncf[:,id_lat,id_lon])
-   elif dimensions == ('ZZ','z_a','y','x'):
+   elif dimensions == ['ZZ','z_a','y','x']:
     restart[var].values[:,id_pft,id_lat,id_lon]=np.copy(ncf[:,id_pft,id_lat,id_lon])
-   elif dimensions == ('ZZ','ZZ','y','x'): 
+   elif dimensions == ['ZZ','ZZ','y','x']: 
     restart[var].values[:,:,id_lat,id_lon]=np.copy(ncf[:,:,id_lat,id_lon])
-   elif dimensions == ('ZZ','z_a','ZZ','y','x'):
+   elif dimensions == ['ZZ','z_a','ZZ','y','x']:
     restart[var].values[:,id_pft,:,id_lat,id_lon]=np.copy(ncf[:,id_pft,:,id_lat,id_lon])
-   elif dimensions == ('ZZ','ZZ','z_a','y','x'):
+   elif dimensions == ['ZZ','ZZ','z_a','y','x']:
     restart[var].values[:,:,id_pft,id_lat,id_lon]=np.copy(ncf[:,:,id_pft,id_lat,id_lon])
-   elif dimensions == ('ZZ','ZZ','ZZ','y','x'):
+   elif dimensions == ['ZZ','ZZ','ZZ','y','x']:
     restart[var].values[:,:,:,id_lat,id_lon]=np.copy(ncf[:,:,:,id_lat,id_lon])
-   elif dimensions == ('ZZ','ZZ','ZZ','z_a','y','x'):
+   elif dimensions == ['ZZ','ZZ','ZZ','z_a','y','x']:
     restart[var].values[:,:,:,id_pft,id_lat,id_lon]=np.copy(ncf[:,:,:,id_pft,id_lat,id_lon])
-   elif dimensions == ('ZZ','ZZ','z_a','ZZ','y','x'):
+   elif dimensions == ['ZZ','ZZ','z_a','ZZ','y','x']:
     restart[var].values[:,:,id_pft,:,id_lat,id_lon]=np.copy(ncf[:,:,id_pft,:,id_lat,id_lon])
-   elif dimensions == ('ZZ','ZZ','ZZ','ZZ','y','x'):
+   elif dimensions == ['ZZ','ZZ','ZZ','ZZ','y','x']:
     restart[var].values[:,:,:,:,id_lat,id_lon]=np.copy(ncf[:,:,:,:,id_lat,id_lon])
 
  os.system("rm -f "+homedir+"/"+name_restart[rr]+"_"+str(nb_ac)+"ac_f.nc")
@@ -258,13 +258,13 @@ for yy in range(begy,endy+1):
      dimensions[ix]="ZZ"
    dim_var=np.shape(ncf)
    if (dim_var==(1,1))|(len(dim_var)==1): continue
-   if   dimensions == ('lat','lon'):
+   if   dimensions == ['lat','lon']:
     restart[var].values[id_lat,id_lon]=np.copy(ncf[id_lat,id_lon])
-   elif dimensions == ('ZZ','lat','lon'):
+   elif dimensions == ['ZZ','lat','lon']:
     restart[var].values[:,id_lat,id_lon]=np.copy(ncf[:,id_lat,id_lon])
-   elif dimensions == ('ZZ','veget','lat','lon'):
+   elif dimensions == ['ZZ','veget','lat','lon']:
     restart[var].values[:,id_pft,id_lat,id_lon]=np.copy(ncf[:,id_pft,id_lat,id_lon])
-   elif dimensions == ('ZZ','ZZ','lat','lon'):
+   elif dimensions == ['ZZ','ZZ','lat','lon']:
     restart[var].values[:,:,id_lat,id_lon]=np.copy(ncf[:,:,id_lat,id_lon])
 os.system("rm -f "+homedir+"/output_"+str(nb_ac)+"ac_f.nc")
 os.system("rm -f "+homedir+"/output_"+str(nb_ac)+"ac_i.nc")
